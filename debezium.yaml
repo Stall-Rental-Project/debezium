@@ -1,0 +1,127 @@
+version: '3.8'
+services:
+  emarket-zookeeper:
+    image: debezium/zookeeper:latest
+    container_name: emarket-zookeeper
+    hostname: emarket-zookeeper
+    restart: unless-stopped
+    ports:
+      - "2181:2181"
+      - "2888:2888"
+      - "3888:3888"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181 # specifies the port on which ZooKeeper listens for client connections
+      ZOOKEEPER_TICK_TIME: 2000 # setting basic timing unit for ZooKeeper operations is 2 seconds
+      SERVER_ID: "1"
+      SERVER_COUNT: "1"
+      LOG_LEVEL: "WARN"
+    healthcheck:
+      test: echo srvr | nc zookeeper 2181 || exit 1
+      start_period: 10s
+      retries: 20
+      interval: 10s
+    volumes:
+      - /path/to/zookeeper/data:/var/lib/zookeeper/data
+      - /path/to/zookeeper/logs:/var/lib/zookeeper/log
+  emarket-kafka:
+    image: debezium/kafka:latest
+    container_name: emarket-kafka
+    hostname: emarket-kafka
+    depends_on:
+      - emarket-zookeeper
+    restart: unless-stopped
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1 #ID for the Kafka Instance
+      ZOOKEEPER_CONNECT: 'emarket-zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "EXTERNAL:PLAINTEXT,INTERNAL:PLAINTEXT" #Protocol definition for the above specified Listeners
+      KAFKA_ADVERTISED_LISTENERS: "INTERNAL://emarket-kafka:29092,EXTERNAL://localhost:9092" #makes Kafka accessible from outside of the container by advertising its location on the Docker host
+      KAFKA_INTER_BROKER_LISTENER_NAME: "INTERNAL"
+      KAFKA_HOST_NAME: "emarket-kafka"
+      KAFKA_LISTENERS: "EXTERNAL://0.0.0.0:9092,INTERNAL://emarket-kafka:29092" #INTERNAL AND EXTERNAL Listeners for the Kafka Instance
+      ADVERTISED_HOST_NAME: "emarket-kafka"
+      # Explain how to setup kafka listeners https://www.baeldung.com/kafka-docker-connection
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_LEVEL: "WARN"
+      KAFKA_LOG_DIRS: "/kafka/data"
+      KAFKA_LOG_RETENTION_HOURS: 72 #The number of hours to keep a log file before deleting it.
+      KAFKA_MESSAGE_MAX_BYTES: 1000012
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1 #required when you are running with a single-node cluster
+      KAFKA_CREATE_TOPICS: "debezium_connect_config:1:1:compact,debezium_connect_offset:1:1:compact,debezium_connect_status:1:1:compact"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "./bin/kafka-topics.sh",
+          "--list",
+          "--bootstrap-server",
+          "emarket-kafka:29092"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - /path/to/kafka/data:/var/lib/kafka/data
+  emarket-debezium:
+    image: debezium/connect:2.4.0.Final
+    container_name: emarket-debezium
+    hostname: emarket-debezium
+    restart: unless-stopped
+    depends_on:
+      - emarket-zookeeper
+      - emarket-kafka
+    ports:
+      - "8083:8083"
+    environment:
+      GROUP_ID: "1"
+      CONFIG_STORAGE_TOPIC: debezium_connect_config
+      OFFSET_STORAGE_TOPIC: debezium_connect_offset
+      STATUS_STORAGE_TOPIC: debezium_connect_status
+      BOOTSTRAP_SERVERS: "emarket-kafka:29092"
+      KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      LOG_LEVEL: "WARN"
+      ADVERTISED_HOST_NAME: "emarket-debezium"
+      ADVERTISED_PORT: "8083"
+    healthcheck:
+      test: [ "CMD", "curl", "--silent", "--fail", "-X", "GET", "http://emarket-debezium:8083/connectors" ]
+      start_period: 10s
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  emarket-debezium-ui:
+    image: debezium/debezium-ui:latest
+    container_name: emarket-debezium-ui
+    hostname: emarket-debezium-ui
+    restart: unless-stopped
+    depends_on:
+      - emarket-debezium
+    ports:
+      - '8085:8080'
+    environment:
+      KAFKA_CONNECT_URIS: http://emarket-debezium:8083
+  emarket-kafka-ui:
+    container_name: emarket-kafka-ui
+    depends_on:
+      - emarket-kafka
+    image: tchiotludo/akhq
+    ports:
+      - "8082:8080"
+    environment:
+      AKHQ_CONFIGURATION: |
+        akhq:
+          connections:
+            docker-kafka-server:
+              properties:
+                bootstrap.servers: "emarket-kafka:29092"
+          pagination:
+            page-size: "10"
+          topic:
+            data:
+              size: "20"
+          ui-options:
+            topic:
+              default-view: "ALL"
+            topic-data:
+              sort: "NEWEST"

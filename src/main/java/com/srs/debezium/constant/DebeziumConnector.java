@@ -51,8 +51,8 @@ public class DebeziumConnector {
     @JsonProperty("table.include.list")
     private String tableIncludeList;
 
-    @JsonProperty("column.exclude.list")
-    private String columnExcludeList;
+    @JsonProperty("column.include.list")
+    private String columnIncludeList;
 
     @JsonProperty("publication.autocreate.mode")
     private String publicationAutoCreateMode;
@@ -116,7 +116,7 @@ public class DebeziumConnector {
         this.databaseDbName = cfg.getName();
         this.schemaIncludeList = cfg.getSchemaIncludeList();
         this.tableIncludeList = cfg.getTableIncludeList();
-        this.columnExcludeList = cfg.getColumnExcludeList();
+        this.columnIncludeList = cfg.getColumnExcludeList();
         this.connectorClass = defaultConnectorClass;
         this.pluginName = defaultPluginName;
         this.slotName = defaultSlotName+"_"+name;

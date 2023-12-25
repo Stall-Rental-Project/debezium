@@ -1,7 +1,6 @@
 package com.srs.debezium.constant;
 
 import com.srs.debezium.config.PropertyReader;
-import org.springframework.stereotype.Component;
 
 public class DatabaseConfig {
     public static final String ACCOUNT = "account";
@@ -31,7 +30,7 @@ public class DatabaseConfig {
 
     private String tableIncludeList;
 
-    private String columnExcludeList;
+    private String columnIncludeList;
 
     public DatabaseConfig(String name, String schemaIncludeList, String tableIncludeList, String columnExcludeList) {
         this.name = name;
@@ -41,7 +40,7 @@ public class DatabaseConfig {
         this.password = PropertyReader.getProperty("password");
         this.schemaIncludeList = schemaIncludeList;
         this.tableIncludeList = tableIncludeList;
-        this.columnExcludeList = columnExcludeList;
+        this.columnIncludeList = columnExcludeList;
     }
 
     public String getHost() {
@@ -73,7 +72,7 @@ public class DatabaseConfig {
     }
 
     public String getColumnExcludeList() {
-        return columnExcludeList;
+        return columnIncludeList;
     }
 
     public static DatabaseConfig getDatabaseConfig(String name) {
@@ -81,13 +80,17 @@ public class DatabaseConfig {
             case ACCOUNT:
                 return buildDatabaseConfig(AccountDB, "emarket",
                         new String[]{
-                                "emarket.notification_view",
+                                "emarket.users",
                         },
                         new String[]{
-                                "emarket.notification_view.viewed_notification_ids",
-                                "emarket.notification_view.deleted_notification_ids",
-                                "emarket.notification_view.seen_notification_ids",
-
+                                "emarket.users.email",
+                                "emarket.users.external_id",
+                                "emarket.users.first_name",
+                                "emarket.users.middle_name",
+                                "emarket.users.last_name",
+                                "emarket.users.status",
+                                "emarket.users.market_codes",
+                                "emarket.users.divisions",
                         });
             case RENTAL:
                 return buildDatabaseConfig(RentalDB, "emarket",
@@ -107,13 +110,11 @@ public class DatabaseConfig {
                 return buildDatabaseConfig(MarketDB, "emarket",
                         new String[]{
                                 "emarket.market",
-                                "emarket.stall",
-                                "emarket.floorplan",
-                                "emarket.floor_stall_index",
-                                "emarket.vending_shift",
-                                "emarket.section",
                         },
                         new String[]{
+                                "emarket.market.market_id",
+                                "emarket.market.code",
+                                "emarket.market.name",
 
                         });
             case LOGGING:
@@ -141,11 +142,11 @@ public class DatabaseConfig {
         return null;
     }
 
-    public static DatabaseConfig buildDatabaseConfig(String name, String schemaIncludeList, String[] tableIncludeList, String[] columnExcludeList) {
+    public static DatabaseConfig buildDatabaseConfig(String name, String schemaIncludeList, String[] tableIncludeList, String[] columnIncludeList) {
         return new DatabaseConfig(
                 name,
                 schemaIncludeList,
-                String.join(",", tableIncludeList), String.join(",", columnExcludeList)
+                String.join(",", tableIncludeList), String.join(",", columnIncludeList)
         );
     }
 }

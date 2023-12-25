@@ -1,5 +1,7 @@
 package com.srs.debezium.constant;
 
+import java.util.List;
+
 import static com.srs.debezium.constant.Constant.*;
 
 public class ConfigurationConstant {
@@ -17,7 +19,7 @@ public class ConfigurationConstant {
     public static final String defaultFailureHandlingMode = FailureHandlingModeWarn; //Specifies how the connector should react to exceptions during processing of events:
     public static final int defaultHeartbeatIntervalMs = 5000; //Frequency for sending replication connection status updates to the server, given in milliseconds/ The property also controls how frequently the database status is checked to detect a dead connection in case the database was shut down.
     public static final boolean defaultFlushLsnSource = true; //Determines whether the connector should commit the LSN of the processed records in the source postgres database so that the WAL logs can be deleted
-    public static final String defaultSkippedOperations = OperationTruncate; //A comma-separated list of operation types that will be skipped during streaming
+    public static final String defaultSkippedOperations = String.join(",",List.of(OperationCreate,OperationDelete,OperationTruncate)); //A comma-separated list of operation types that will be skipped during streaming
     public static final String defaultTopicNamingStrategy = "io.debezium.schema.SchemaTopicNamingStrategy";//used to determine the topic name for data change, schema change, transaction, heartbeat event etc.,
     //you have tables public.customers and public.orders in the mydb database, the SchemaTopicNamingStrategy will generate topic names based on the schema and table names. The generated topics would look like this:
 //my-db-server.public.customers

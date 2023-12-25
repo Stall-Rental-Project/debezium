@@ -26,6 +26,7 @@ public class DebeziumService implements CommandLineRunner {
         this.objectMapper = objectMapper;
     }
     private final ObjectMapper objectMapper;
+
     @Value("${debezium.host}")
     private String apiUrl;
 
@@ -35,9 +36,9 @@ public class DebeziumService implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        var accountConnector= new DebeziumConnector("account",DatabaseConfig.getDatabaseConfig(DatabaseConfig.ACCOUNT));
+        var marketConnector= new DebeziumConnector("market",DatabaseConfig.getDatabaseConfig(DatabaseConfig.MARKET));
 
-        registerConnector(accountConnector);
+        registerConnector(marketConnector);
     }
 
     public Map<String, Object> convertInstanceToMap(Object instance) throws Exception {
@@ -66,7 +67,7 @@ public class DebeziumService implements CommandLineRunner {
                     logger.warn("WARN: Error when registering connector with name: {}. Detail: {}. Trying to update instead", debeziumConnector.getName());
                     updateConnector(debeziumConnector);
                 } else {
-                    logger.error("Can't update Connector {}",debeziumConnector.getName());
+                    logger.error("Can't update Connector {}",e.getLocalizedMessage());
                 }
         }
 
@@ -88,10 +89,9 @@ public class DebeziumService implements CommandLineRunner {
         );
 
         if (updateResponse.getStatusCode().value()>299) {
-           new RuntimeException("Can't update Connector "+debeziumConnector.getName());
+            throw new RuntimeException("Can't update Connector " + debeziumConnector.getName());
         } else {
             logger.info("Update successfully for {}",debeziumConnector.getName());
-            return;
         }
     }
 
