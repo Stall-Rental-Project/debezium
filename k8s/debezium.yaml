@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: debezium
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: debezium
+  template:
+    metadata:
+      labels:
+        app: debezium
+    spec:
+      restartPolicy: Always
+      containers:
+        - name: debezium
+          image: debezium/connect:2.4.0.Final
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8083
+          env:
+            - name: BOOTSTRAP_SERVERS
+              value: "kafka:9092"
+            - name: CONFIG_STORAGE_TOPIC
+              value: "debezium_connect_config"
+            - name: OFFSET_STORAGE_TOPIC
+              value: "debezium_connect_offset"
+            - name: STATUS_STORAGE_TOPIC
+              value: "debezium_connect_status"
+            - name: LOG_LEVEL
+              value: "WARN"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: debezium
+  labels:
+    app: debezium
+spec:
+  #type: ClusterIP
+  type: NodePort
+  selector:
+    app: debezium
+  ports:
+    - port: 8083
+      targetPort: 8083
+      nodePort: 32333
